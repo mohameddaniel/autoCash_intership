@@ -5,6 +5,7 @@ import AddCarScreen from '../component/new_cars/add.car'
 import HomeRoot from './home-route'
 import { fonts } from '../utils/fonts'
 import { COLORS } from '../utils/color.ui'
+import { Bell, CircleEllipsis } from 'lucide-react-native'
 
 
 export type StackParamList = {
@@ -27,11 +28,13 @@ const StackRoot = () => {
                 headerShown:true,
                 title:'Ajouter une voiture',
                 presentation:'modal',
-                headerTitleStyle:{
-                    fontSize:18,
-                    fontFamily:fonts.medium,
-                    color:COLORS.black_lite,
-                }
+                headerTitleStyle:styles.headerTitleStyle,
+                headerRight:() => (
+                    <View style={styles.headerContainer}>
+                       <Bell size={22} color={COLORS.black_lite_v2}/>
+                       <CircleEllipsis size={22} color={COLORS.black_lite_v2}/>
+                    </View>
+                )
             }}
             component={AddCarScreen}
             />
@@ -46,4 +49,15 @@ const StackRoot = () => {
 
 export default StackRoot
 
-const styles = StyleSheet.create({})
+const styles = StyleSheet.create({
+    headerTitleStyle :{
+        fontSize:18,
+        fontFamily:fonts.medium,
+        color:COLORS.black_lite,
+    },
+    headerContainer:{
+        flexDirection:'row',
+        paddingHorizontal:15,
+        gap:15
+    }
+})

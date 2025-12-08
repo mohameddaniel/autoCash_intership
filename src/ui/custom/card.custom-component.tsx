@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react'
-import { Image, StyleSheet, Text, View, ImageSourcePropType } from 'react-native'
-import { Calendar, Map, SearchCode, Warehouse } from 'lucide-react-native'
-import { CarItemType } from '../../types/car.info.type' // Assure-toi du chemin
+import React from 'react'
+import { Image, StyleSheet, Text, View,  } from 'react-native'
+import { CalendarDays, MapPinned, SearchCode, Warehouse } from 'lucide-react-native'
+import { CarItemType } from '../../types/car.info.type' 
 import { COLORS } from '../utils/color.ui'
 import { fonts } from '../utils/fonts'
 import { since } from '../utils/function.time'
@@ -55,7 +55,7 @@ const Card: React.FC<CardProps> = ({ data }) => {
             </View>
 
             <View style={styles.metaItem}>
-              <Map opacity={0.8} size={16} color={COLORS.black_lite}/>
+              <MapPinned opacity={0.8} size={16} color={COLORS.black_lite}/>
               <Text style={styles.metaText} numberOfLines={1}>{data?.localisation}</Text>
             </View>
           </View>
@@ -67,7 +67,7 @@ const Card: React.FC<CardProps> = ({ data }) => {
 
       <View style={styles.footer}>
         <View style={styles.dateContainer}>
-          <Calendar size={16} color={COLORS.Bright_Royal_Blue}/>
+          <CalendarDays size={16} color={COLORS.Bright_Royal_Blue}/>
           <Text style={styles.dateText}>{since(data?.datePublication)}</Text>
         </View>
 

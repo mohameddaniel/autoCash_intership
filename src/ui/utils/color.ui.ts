@@ -5,7 +5,9 @@ export const COLORS = {
     black_lite:'#212121',
     black_lite_v2:'#23272E',
     lite:'#EDEDED',
-    blue_light:'#D0DCF3'
+    blue_light:'#D0DCF3',
+    white_v1:'#F2F5FA',
+    blue_light_v0:'#DAE7FF'
 }
 
 export  const STATUS = {

@@ -2,7 +2,7 @@ import { StatusBar, StyleSheet, TextInput, View, TouchableOpacity, Text, FlatLis
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { COLORS } from '../../utils/color.ui'
-import { Bell, Filter, MoreHorizontal, Search } from 'lucide-react-native'
+import { Bell, CircleEllipsis, ListFilter, Search } from 'lucide-react-native'
 import { fonts } from '../../utils/fonts'
 import LinearGradient from 'react-native-linear-gradient'
 import { buttonName } from '../../utils/button.filter'
@@ -38,7 +38,7 @@ const HomeScreen = () => {
             </View>
 
             <TouchableOpacity style={styles.filterButton} activeOpacity={0.7}>
-                <Filter color={COLORS.Bright_Royal_Blue} size={22}/>
+                <ListFilter color={COLORS.Bright_Royal_Blue} size={22}/>
             </TouchableOpacity>
 
             <View style={styles.actionsContainer}>
@@ -47,7 +47,7 @@ const HomeScreen = () => {
                 </TouchableOpacity>
                 
                 <TouchableOpacity activeOpacity={0.7}>
-                    <MoreHorizontal size={24} color={COLORS.black_lite_v2} />
+                    <CircleEllipsis size={24} color={COLORS.black_lite_v2} />
                 </TouchableOpacity>
             </View>
         </View>

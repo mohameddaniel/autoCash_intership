@@ -3,7 +3,7 @@ import React from 'react'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { HomeTabParamList } from '../../types/home-root.type'
 import HomeScreen from '../component/home/home-screen'
-import { Home ,Car, User, Layers, DollarSign} from 'lucide-react-native'
+import {Tags, CarFront, UserRoundCheck, Banknote, ChartColumn} from 'lucide-react-native'
 import { COLORS } from '../utils/color.ui'
 import { fonts } from '../utils/fonts'
 
@@ -23,15 +23,15 @@ export default function HomeRoot() {
             tabBarIcon:({color, size, focused}) =>{
                 switch(route.name){
                     case 'home':
-                        return <Home color={color} size={size}/>
+                        return <ChartColumn color={color} size={size}/>
                     case 'car':
-                        return <Car color={color} size={size}/>
+                        return <CarFront color={color} size={size}/>
                     case 'seller':
-                        return <User color={color} size={size}/>
+                        return <Tags color={color} size={size}/>
                     case 'lead':
-                        return <Layers color={color} size={size}/>
+                        return <UserRoundCheck color={color} size={size}/>
                     case 'finance':
-                        return <DollarSign color={color} size={size}/>
+                        return <Banknote color={color} size={size}/>
                 }
             }
         })}
