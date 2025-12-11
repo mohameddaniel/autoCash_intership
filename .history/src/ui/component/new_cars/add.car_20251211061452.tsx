@@ -1,0 +1,506 @@
+import React, { useEffect, useState, useCallback } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert, Platform, KeyboardAvoidingView, ToastAndroid, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { FileText, Upload } from 'lucide-react-native';
+import { pick, types, DocumentPickerResponse } from '@react-native-documents/picker';
+
+// --- IMPORTS ---
+import { COLORS, STATUS } from '../../utils/color.ui';
+import { fonts } from '../../utils/fonts';
+import ProPriceInput from '../../custom/input.price'; 
+import ProTextInput from '../../custom/input.text';   
+import SmartCombobox from '../../custom/comboBox.component';
+import PhoneInput from '../../custom/phone.input';
+import LoadingCycle from '../../custom/loading.cycle';
+
+// --- DATA & REDUX ---
+import { SellerTypeData } from '../../../store/data/siller.type';
+import { cities } from '../../../store/data/cities.maorc';
+import { useAppDispatch, useAppSelector } from '../../../store/redux/store/redux.hooks';
+import { fetchNames } from '../../../store/redux/features/fetch/fetchNames/fetch.names';
+import { fetchBrandAction } from '../../../store/redux/features/fetch/fetchBrand/Brand.fetch';
+import { fetchMonths } from '../../../store/redux/features/fetch/fetchMonths/fetch.months';
+import { fetchYears } from '../../../store/redux/features/fetch/fetchYears/fetch.years';
+import { fetchModel } from '../../../store/redux/features/fetch/fetchModel/fetch.model';
+import { RegisterInput, registerSequenceAction } from '../../../store/redux/features/car/car.save.infos';
+import { findType, transBrnads, transModels, transMonths, transYears } from '../../utils/transforms.data';
+import { useSelector } from 'react-redux';
+import { Toast } from 'toastify-react-native';
+
+const AddCarScreen = () => {
+  const dispatch = useAppDispatch();
+
+  const { isLoading: loadingNames, names } = useAppSelector((state) => state.name);
+  const { isLoading: loadingBrand, brands } = useAppSelector((state) => state.brand);
+  const { isLoading: loadingMonth, months } = useAppSelector((state) => state.month);
+  const { isLoading: loadingYear, years } = useAppSelector((state) => state.year);
+  const { isLoading: loadingModel, models } = useAppSelector((state) => state.model);
+  const {error,isLoading} = useAppSelector((state) => state.register)
+  
+  const isGlobalLoading = loadingNames || loadingBrand || loadingMonth || loadingYear || loadingModel;
+
+  const [price, setPrice] = useState<number | any>(null);
+  const [picture, setPicture] = useState<DocumentPickerResponse | null>(null);
+  
+  // Vendeur
+  const [sellerTypeId, setSellerTypeId] = useState<string | undefined>(); 
+  const [sellerNameId, setSellerNameId] = useState<number | null >();
+  const [phoneDisplay, setPhoneDisplay] = useState('');
+  const [phoneRaw, setPhoneRaw] = useState('');
+  const [email, setEmail] = useState('');
+  const [city, setCity] = useState('');
+  const [address, setAddress] = useState('');
+  const [selCity, setselCity] = useState('');
+
+  // Voiture
+  const [marqueId, setMarqueId] = useState< number | any>();
+  const [modelId, setModelId] = useState<number | any>();
+  const [yearId, setYearId] = useState<number | any | undefined>();
+  const [monthId, setMonthId] = useState<number | any | undefined>();
+  const [km, setKm] = useState<string>('');
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+
+  useEffect(() => {
+    dispatch(fetchNames());
+    dispatch(fetchBrandAction());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (marqueId) {
+      dispatch(fetchModel(marqueId as number));
+      setModelId(undefined);
+    }
+  }, [marqueId, dispatch]);
+   
+  useEffect(() => {
+    if (modelId) {
+      dispatch(fetchMonths(modelId as number));
+      dispatch(fetchYears(modelId as number));
+      setYearId(undefined); 
+      setMonthId(undefined); 
+    }
+  }, [modelId, dispatch]);
+
+
+
+  const handlePickImage = async () => {
+    try {
+      const [result] = await pick({
+        type: [types.images],
+        mode: 'import',
+        allowMultiSelection: false,
+      });
+      setPicture(result);
+      setErrors(prev => ({...prev, picture: ''})); 
+    } catch (err: any) {
+       console.error(err);
+    }
+  };
+
+  const validateForm = (): boolean => {
+    let tempErrors: Record<string, string> = {};
+    let isValid = true;
+
+    if (!price) tempErrors.price = "Le prix est requis";
+    if (!sellerTypeId) tempErrors.sellerType = "Type requis";
+    if (!sellerNameId) tempErrors.sellerName = "Nom requis";
+    if (!phoneRaw) tempErrors.phone = "Téléphone requis";
+    if (!marqueId) tempErrors.marque = "Marque requise";
+    if (!modelId) tempErrors.model = "Modèle requis";
+    if (!yearId) tempErrors.year = "Année requise";
+    if (!picture) tempErrors.picture = "Photo requise";
+    if(!email) tempErrors.email = "Email est requise"
+    if(!city)  tempErrors.city = "la ville est requise";
+    if(!address)  tempErrors.address = "l'adress est requise"
+    if(!monthId)  tempErrors.monthId = "le mois est requise"
+    if(!km)  tempErrors.km = "kelimétrage est requise"
+    if(!selCity) tempErrors.selCity = "La ville est requise"
+
+    if (Object.keys(tempErrors).length > 0) {
+      setErrors(tempErrors);
+      isValid = false;
+      ToastAndroid.show( "Veuillez remplir tous les champs obligatoires.",ToastAndroid.SHORT);
+    } else {
+        setErrors({});
+    }
+    return isValid;
+  };
+
+  const handleSubmit = () => {
+    if(!( /^[^\s@]+@[^\s@]+\.[^\s@]+$/).test(email)) Toast.error("Format d'email invalide",'center')
+    const carDataPayload:RegisterInput = {
+         user: {
+            name_id:sellerNameId,
+            sellerType:findType(sellerTypeId as any) ,
+            phone: phoneRaw,
+            email,
+            city:selCity,
+            address,  
+        },
+        car: {
+            car_price:price,
+            id_brand: marqueId,
+            id_model: modelId,
+            city:city,
+            mile_age: km ? parseInt(km.replace(/\s/g, '')) : 0, 
+            monthId:monthId,
+            yearId:yearId,
+        },
+        image:{
+          uri:picture?.uri,
+          type:picture?.type,
+          name:picture?.name
+        }
+    };
+
+    console.log("Envoi des données:", carDataPayload);
+    try{
+       dispatch(registerSequenceAction(carDataPayload))
+       setAddress('')
+       setCity('')
+       setEmail('')
+       setKm('')
+       setMarqueId('')
+       setPicture(null)
+       setYearId('')
+       setMonthId('')
+       setSellerTypeId('')
+       setSellerTypeId('')
+       setPhoneDisplay("")
+       setselCity('')
+       setPrice(null)
+
+    }catch(err){
+      console.log("semothing wrong")
+    }
+    
+  };
+
+
+  
+  return (
+    <SafeAreaView style={styles.container}>
+      <LoadingCycle isLoadingCycle={isGlobalLoading}/>
+      
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+        style={{ flex: 1 }}
+      >
+        <ScrollView 
+            showsVerticalScrollIndicator={false} 
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 40 }}
+        >
+            
+            {/* --- PRIX --- */}
+            <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Prix</Text>
+            <ProPriceInput
+                onChangeValue={setPrice}
+                value={price}
+                error={errors.price} 
+            />
+            </View>
+
+            {/* --- SECTION VENDEUR --- */}
+            <SectionHeader title="Informations du vendeur" />
+
+            <View style={[styles.inputContainer, { zIndex: 2000 }]}>
+            <Text style={styles.inputLabel}>Type vendeur</Text>
+            <SmartCombobox
+                data={SellerTypeData} 
+                value={sellerTypeId}
+                onChange={setSellerTypeId as any}
+                placeholder="Particulier, Garage..."
+                error={errors.sellerType}
+                zIndex={2000} 
+            />
+            </View>
+
+            <View style={[styles.inputContainer, { zIndex: 1000 }]}>
+            <Text style={styles.inputLabel}>Nom du vendeur</Text>
+            <SmartCombobox
+                data={names} 
+                value={sellerNameId as any}
+                onChange={setSellerNameId as  any}
+                placeholder="Rechercher..."
+                error={errors.sellerName}
+                zIndex={1000}
+            />
+            </View>
+
+            <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Téléphone</Text>
+            <PhoneInput
+                value={phoneDisplay}
+                onChange={(formatted, raw) => {
+                    setPhoneDisplay(formatted); 
+                    setPhoneRaw(raw);         
+                }}
+            />
+            {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+            </View>
+
+            <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Email</Text>
+            <ProTextInput
+                value={email}
+                onChangeText={setEmail}
+                placeholder="user@gmail.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+            />
+             {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+            </View>
+
+           <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Ville</Text>
+            <ProTextInput
+                value={selCity}
+                onChangeText={setselCity as any}
+                placeholder="sélectionnez..."
+                multiline
+                style={{ height: 50 }}
+            />
+            {errors.selCity && <Text style={styles.errorText}>{errors.selCity}</Text>}
+            </View>
+
+            <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Adresse</Text>
+            <ProTextInput
+                value={address}
+                onChangeText={setAddress}
+                placeholder="Quartier, Rue..."
+                multiline
+                style={{ height: 50 }}
+            />
+            {errors.address && <Text style={styles.errorText}>{errors.address}</Text>}
+            </View>
+
+            {/* --- SECTION VÉHICULE --- */}
+            <SectionHeader title="Informations du véhicule" />
+            
+            <View style={[styles.inputContainer,{zIndex:4000}]}>
+            <Text style={styles.inputLabel}>Marque</Text>
+            <SmartCombobox
+                data={transBrnads(brands)}
+                onChange={setMarqueId}
+                value={marqueId}
+                error={errors.marque}
+                zIndex={4000}
+            />
+            </View>
+
+            <View style={[styles.inputContainer,{zIndex:3000}]}>
+            <Text style={styles.inputLabel}>Modèle</Text>
+            <SmartCombobox
+                data={transModels(models)}
+                onChange={setModelId}
+                value={modelId}
+                error={errors.model}
+                zIndex={3000}
+            />
+            </View>
+            
+            <View style={[styles.inputContainer,{zIndex:2000}]}>
+                <Text style={styles.inputLabel}>Année</Text>
+                <SmartCombobox
+                    data={transYears(years)}
+                    onChange={setYearId}
+                    value={yearId}
+                    error={errors.year}
+                    zIndex={2000}
+                />
+            </View>
+
+            <View style={[styles.inputContainer, {zIndex:1000}]}>
+                <Text style={styles.inputLabel}>Mois</Text>
+                <SmartCombobox
+                    data={transMonths(months)}
+                    onChange={setMonthId}
+                    value={monthId}
+                    zIndex={1000}
+                    error={errors?.monthId}
+                />
+            </View>
+        
+            <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Kilométrage</Text>
+                <ProTextInput
+                    onChangeText={setKm}
+                    value={km}
+                    placeholder='Ex: 120 000'
+                    keyboardType="numeric"
+                />
+                 {errors.km && <Text style={styles.errorText}>{errors.km}</Text>}
+            </View>
+
+            <View style={[styles.inputContainer, { zIndex: 900 }]}>
+             <Text style={styles.inputLabel}>Ville</Text>
+             <SmartCombobox
+                data={cities} 
+                value={city}
+                onChange={(val) => setCity(val as string)}
+                placeholder="Casablanca..."
+                error={errors.city}
+                zIndex={900}
+             />
+            </View>
+
+            {/* --- PHOTO --- */}
+            <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Photo voiture</Text>
+            <TouchableOpacity
+                onPress={handlePickImage} 
+                activeOpacity={0.8}
+                style={[styles.uploadButton, errors.picture ? {borderColor: 'red'} : null]}>
+                <Text style={[styles.uploadText, errors.picture ? {color: 'red'} : null]}>
+                    {picture ? 'Changer la photo' : 'Charger une photo'}
+                </Text>
+                <Upload size={20} color={errors.picture ? 'red' : COLORS.Bright_Royal_Blue} />
+            </TouchableOpacity>
+            
+            {picture && (
+                <View style={styles.fileFeedback}>
+                    <Text style={styles.fileName} numberOfLines={1}>
+                        {'Fichier: ' + picture.name}
+                    </Text>
+                </View>
+            )}
+            </View>
+
+            {/* --- SUBMIT --- */}
+            <TouchableOpacity
+                onPress={() => {
+                  if (!validateForm()) return;
+                  Alert.alert(
+                    'Ajouter une voiture',
+                     "Êtes-vous sûr de vouloir enregistrer la voiture ?",
+                    [
+                      {text:'Annuler',style:'cancel'},
+                      {text:'Je confirme',onPress:() => handleSubmit()}
+                    ]
+                  )
+
+                  ToastAndroid.show("la voiyre est ajouter avec succes",ToastAndroid.LONG)
+                }}
+                style={styles.submitButton} 
+                activeOpacity={0.9}>
+                {isLoading && <ActivityIndicator size={"small"} color={COLORS.white}/>}
+                <Text style={styles.submitText}>Confirmer</Text>
+            </TouchableOpacity>
+
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  )
+}
+
+const SectionHeader = ({ title }: { title: string }) => (
+    <View style={styles.sectionHeader}>
+        <View style={styles.iconContainer}>
+        <View style={styles.iconCircle}>
+            <FileText color={COLORS.white} size={16} /> 
+        </View>
+        </View>
+        <Text style={styles.sectionTitle}>{title}</Text>
+    </View>
+);
+
+export default AddCarScreen
+
+const styles = StyleSheet.create({
+  container:{
+    flex: 1,
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 20
+  },
+  // ...
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4
+  },
+  inputContainer:{
+    gap: 8, 
+    marginVertical: 8,
+  },
+  inputLabel:{
+    fontSize: 14,
+    fontFamily: fonts.light, 
+    color: COLORS.black_lite
+  },
+  iconContainer:{
+    width:52,
+    height:52,
+    alignItems:'center',
+    justifyContent:'center',
+    backgroundColor:COLORS.blue_light_v0,
+    borderRadius:50
+  },
+  sectionHeader:{
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 24,
+    marginBottom: 16
+  },
+  iconCircle:{
+    backgroundColor: COLORS.Bright_Royal_Blue, 
+    height: 32,
+    width: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16
+  },
+  sectionTitle:{
+    fontSize: 16,
+    fontFamily: fonts.bold,
+    color: COLORS.Bright_Royal_Blue
+  },
+  uploadButton:{
+    height: 56,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: COLORS.Bright_Royal_Blue,
+    borderRadius: 100,
+    backgroundColor: COLORS.white
+  },
+  uploadText:{
+    fontSize: 14,
+    fontFamily: fonts.semBold,
+    color: COLORS.Bright_Royal_Blue
+  },
+  fileFeedback: {
+      marginTop: 1,
+      padding: 2,
+  },
+  fileName:{
+    fontSize: 11,
+    fontFamily: fonts.medium,
+    color: STATUS.pub_text
+  },
+  submitButton:{
+    height: 56,
+    width: '100%',
+    alignItems: 'center',
+    flexDirection:'row',
+    gap:10,
+    justifyContent: 'center',
+    backgroundColor: COLORS.Bright_Royal_Blue,
+    borderRadius: 100,
+    marginTop: 20,
+  },
+  submitText:{
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: COLORS.white
+  }
+})

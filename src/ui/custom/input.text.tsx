@@ -1,4 +1,3 @@
-// components/custom/input.text.tsx (Renomme l'autre en input.price.tsx)
 import React, { useState } from 'react';
 import { StyleSheet, TextInput, View, TextInputProps, Text } from 'react-native';
 import { COLORS } from '../utils/color.ui';
